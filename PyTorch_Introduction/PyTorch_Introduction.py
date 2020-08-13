@@ -111,15 +111,16 @@ print()
 
 ### CUDA Sementics ###
 # It's easy to copy tensor from cpu to gpu or from gpu to cpu.
-#cpu = torch.device('cpu')
-#gpu = torch.device('cuda')
+cpu = torch.device('cpu')
+gpu = torch.device('cuda')
 
-#x = torch.rand(10)
-#print(x)
-#x = x.to(gpu)
-#print(x)
-#x = x.to(cpu)
-#print(x)
+x = torch.rand(10)
+print(x)
+x = x.to(gpu)
+print(x)
+x = x.to(cpu)
+print(x)
+print()
 # Error (Torch not compiled with CUDA enabled), because can't use GPU on VMware Player, so try it on colab notebook.
 
 ### PyTorch as an auto grad framework ###
@@ -675,7 +676,7 @@ print()
 # precision training. Finer-grained control of how a given opt_level behaves can be achieved by passing values for particular properties directly
 # to amp.initialize. These manually specified values override the defaults established by the opt_level.
 
-#from apex import amp
+from apex import amp
 
 # Declare model and optimizer as usual, with default (FP32) precision
 #model = torch.nn.Linear(10, 100).cuda()
@@ -687,7 +688,57 @@ print()
 
 # loss.backward() becomes:
 #with amp.scale_loss(loss, optimizer) as scaled_loss:
-#    caled_loss.backward()
+    #scaled_loss.backward()
 #...
+
+# Above is only example code structure, not complete training. Can't run it. So I write below executable example code.
+
+d = 1
+n = 200
+X = torch.rand(n, d)
+y = 4 * torch.sin(np.pi * X) * torch.cos(6 * np.pi * X ** 2)
+
+step_size = 0.05
+n_epochs = 6000
+n_hidden_1 = 32
+n_hidden_2 = 32
+d_out = 1
+
+neural_network = nn.Sequential(
+                            nn.Linear(d, n_hidden_1),
+                            nn.Tanh(),
+                            nn.Linear(n_hidden_1, n_hidden_2),
+                            nn.Tanh(),
+                            nn.Linear(n_hidden_2, d_out)
+                            ).cuda()
+
+loss_func = nn.MSELoss()
+
+optim = torch.optim.SGD(neural_network.parameters(), lr = step_size)
+
+neural_network, optim = amp.initialize(neural_network, optim, opt_level = "O1")
+
+print('iter,\tloss')
+for i in range(n_epochs):
+    y_hat = neural_network(X.to(gpu))
+    loss = loss_func(y_hat, y.to(gpu))
+    optim.zero_grad()
+    with amp.scale_loss(loss, optim) as scale_loss:
+        scale_loss.backward()
+    optim.step()
+
+    if i % (n_epochs // 10) == 0:
+        print('{},\t{:.2f}'.format(i, loss.item()))
+print()
+
+plt.figure()  # create a new figure window
+X_grid = torch.from_numpy(np.linspace(0, 1, 50)).float().view(-1, d)
+y_hat = neural_network(X_grid.to(gpu))
+plt.scatter(X.numpy(), y.numpy())
+plt.plot(X_grid.to(cpu).detach().numpy(), y_hat.to(cpu).detach().numpy(), 'r')
+plt.title('plot of $f(x)$ and $\hat{f}(x)$')
+plt.xlabel('$x$')
+plt.ylabel('$y$')
+plt.show()
 
 # Error (Torch not compiled with CUDA enabled), because can't use GPU on VMware Player, so try it on colab notebook.
