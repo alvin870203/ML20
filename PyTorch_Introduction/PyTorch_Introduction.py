@@ -287,6 +287,7 @@ print('We can see that the weights exist in the background\n')
 print('W:', linear_module.weight)
 print('b:', linear_module.bias)
 print()
+# All the parameters in the nn world are defined as nn.Parameters(). These are basically tensors that requires_grad and that work nice with nn tools.
 
 #     Activation functions
 #     PyTorch implements a number of activation functions including but not limited to ReLU, Tanh, and Sigmoid. Since they are modules, they need
@@ -543,7 +544,7 @@ input = torch.tensor([[-1., 1], [-1, 1], [1, -1]])  # raw scores correspond to t
 #input = torch.tensor([[1., -1], [1, -1], [-1, 1]])  # raw scores correspond to the incorrect class
 #input = torch.tensor([[3., -3], [3, -3], [-3, 3]])  # raw scores correspond to the incorrect class with incorrectly placed confidence
 
-target = torch.tensor([1, 1, 0])
+target = torch.tensor([1, 1, 0])  # set as default integer type: int64
 output = loss(input, target)
 print(output)
 print()
